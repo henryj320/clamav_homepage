@@ -1,11 +1,11 @@
-from typing import Union
-from fastapi import FastAPI
-from dotenv import load_dotenv
-import os
-from distutils.util import strtobool
+"""Return details on when ClamAV was last run."""
+
 from datetime import datetime
+from distutils.util import strtobool
 import time
-import math
+import os
+from dotenv import load_dotenv
+from fastapi import FastAPI
 
 
 
@@ -13,41 +13,60 @@ app = FastAPI()
 
 @app.get("/")
 def read_root() -> dict:
-    
+    """Return the status of ClamAV to the endpoint.
+
+    Returns:
+        dict: Dict containing the details of ClamAV.
+    """
+
     load_dotenv(dotenv_path="/updates/.env", override=True)
 
     # Read virusEvent and convert it to a boolean.
     virus_event = os.getenv('virusEvent', 'False')
 
-    bool = strtobool(virus_event)
-    if bool:
+    virus = strtobool(virus_event)
+    if virus:
         plaintext = "🔴 Virus Detected! 🔴"
+
+        with open('/updates/trigger.txt', 'a', encoding='utf-8') as trigger_file:
+            today = datetime.fromtimestamp(time.time()).strftime('%d %B at %H:%M')
+            trigger_file.write(today)
+
     else:
         plaintext = "No viruses found"
 
     try:
-        time, time_unit = calculate_last_modified('/logs/clamav.log')
+        log_time, log_time_unit = calculate_last_modified('/logs/clamav.log')
     except:
-        time = 0
-        time_unit = "seconds"
-    time_combined = f"{time} {time_unit}"
+        log_time = 0
+        log_time_unit = "seconds"
+    log_time_combined = f"{log_time} {log_time_unit}"
 
     try:
-        event_time, event_time_unit = calculate_last_modified('/updates/.env')
+        event_time, event_time_unit = calculate_last_modified('/updates/trigger.txt')
     except:
         event_time = 0
         event_time_unit = "seconds"
     event_time_combined = f"{event_time} {event_time_unit}"
 
-    dict = {
+    output = {
         "virus_event": virus_event,
         "plaintext": plaintext,
-        "time": time_combined, 
+        "time": log_time_combined, 
         "last_event": event_time_combined
     }
-    return dict
+    return output
+
 
 def calculate_last_modified(location: str) -> tuple:
+    """Return when the file was last modified
+
+    Args:
+        location (str): Path to the file
+
+    Returns:
+        tuple: The time and units since the file was last modified.
+    """
 
     # Get how long ago the file was modified.
     time_modified = os.path.getmtime(location)
@@ -69,3 +88,4 @@ def calculate_last_modified(location: str) -> tuple:
 # docker compose up -d --force-recreate --build
 # docker exec -it clamav_homepage sh
 # docker logs clamav_homepage
+# pylint --max-line-length=240 ./main.py
