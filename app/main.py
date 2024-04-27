@@ -26,23 +26,28 @@ def read_root() -> dict:
         plaintext = "No viruses found"
 
     try:
-        time, time_unit = log_file_last_modified()
+        time, time_unit = calculate_last_modified('/logs/clamav.log')
     except:
         time = 0
         time_unit = "seconds"
     time_combined = f"{time} {time_unit}"
 
+    try:
+        event_time, event_time_unit = calculate_last_modified('/updates/.env')
+    except:
+        event_time = 0
+        event_time_unit = "seconds"
+    event_time_combined = f"{event_time} {event_time_unit}"
+
     dict = {
         "virus_event": virus_event,
         "plaintext": plaintext,
-        "time": time_combined
+        "time": time_combined, 
+        "last_event": event_time_combined
     }
     return dict
 
-def log_file_last_modified() -> tuple:
-
-    # Location of the log file.
-    location = '/logs/clamav.log'
+def calculate_last_modified(location: str) -> tuple:
 
     # Get how long ago the file was modified.
     time_modified = os.path.getmtime(location)
