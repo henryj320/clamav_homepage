@@ -1,0 +1,13 @@
+version: "3.3"
+services:
+  clamav-homepage:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: clamav_homepage
+    restart: unless-stopped
+    ports:
+      - 1011:80
+    volumes:
+      - ./updates:/updates
+      - /home/henry/SharedFolder/Henry/Logs/:/logs
